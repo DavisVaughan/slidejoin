@@ -12,6 +12,8 @@ License: MIT + file LICENSE
 URL: https://github.com/DavisVaughan/slidejoin
 BugReports: https://github.com/DavisVaughan/slidejoin/issues
 Imports: 
+    dplyr,
+    ellipsis,
     rlang,
     slider,
     vctrs
