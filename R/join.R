@@ -3,7 +3,7 @@
 # TODO: Finer control over rolling the ends? Like `rollends`
 # TODO: Allow `i` to be different between `x` and `y`? c("foo" = "bar")?
 
-slide_join <- function(x, y, i, ..., type = "locf") {
+slide_join <- function(x, y, i, ..., type = "locf", preserve_if_empty_x = FALSE, preserve_if_empty_y = FALSE) {
   check_dots_empty()
 
   x_i <- x[[i]]
@@ -17,6 +17,7 @@ slide_join <- function(x, y, i, ..., type = "locf") {
   y_front <- min(1L, y_size)
   y_back <- y_size
 
+  x_empty <- x_size == 0L
   y_empty <- y_size == 0L
 
   if (identical(type, "locf")) {
@@ -27,13 +28,8 @@ slide_join <- function(x, y, i, ..., type = "locf") {
     to <- to - 1L
     to <- pmax(to, from)
 
-    if (y_empty) {
-      x_slicer_before <- seq_len(x_size)
-      x_slicer_after <- integer()
-    } else {
-      x_slicer_before <- which(x_i < vec_slice(y_i, y_front))
-      x_slicer_after <- which(x_i >= vec_slice(y_i, y_back))
-    }
+    x_slicer_before <- which(x_i < vec_slice(y_i, y_front))
+    x_slicer_after <- which(x_i >= vec_slice(y_i, y_back))
 
     y_slicer_before <- vec_rep(NA_integer_, length(x_slicer_before))
     y_slicer_after <- vec_rep(y_back, length(x_slicer_after))
@@ -49,13 +45,8 @@ slide_join <- function(x, y, i, ..., type = "locf") {
     from <- from + 1L
     from <- pmin(from, to)
 
-    if (y_empty) {
-      x_slicer_before <- integer()
-      x_slicer_after <- seq_len(x_size)
-    } else {
-      x_slicer_before <- which(x_i <= vec_slice(y_i, y_front))
-      x_slicer_after <- which(x_i > vec_slice(y_i, y_back))
-    }
+    x_slicer_before <- which(x_i <= vec_slice(y_i, y_front))
+    x_slicer_after <- which(x_i > vec_slice(y_i, y_back))
 
     y_slicer_before <- vec_rep(y_front, length(x_slicer_before))
     y_slicer_after <- vec_rep(NA_integer_, length(x_slicer_after))
@@ -79,6 +70,15 @@ slide_join <- function(x, y, i, ..., type = "locf") {
 
   x_slicer <- c(x_slicer_before, x_slicer, x_slicer_after)
   y_slicer <- c(y_slicer_before, y_slicer, y_slicer_after)
+
+  if (preserve_if_empty_x && x_empty) {
+    x_slicer <- vec_rep(NA_integer_, y_size)
+    y_slicer <- seq_len(y_size)
+  }
+  if (preserve_if_empty_y && y_empty) {
+    x_slicer <- seq_len(x_size)
+    y_slicer <- vec_rep(NA_integer_, x_size)
+  }
 
   x_out <- vec_slice(x, x_slicer)
   y_out <- vec_slice(y, y_slicer)
@@ -110,7 +110,7 @@ slide_left_join <- function(x, y, i, by, ..., type = "locf") {
 
   dplyr::summarise(
     joined,
-    slide_join(x = lhs, y = rhs, i = i, type = type),
+    slide_join(x = lhs, y = rhs, i = i, type = type, preserve_if_empty_y = TRUE),
     .groups = "keep"
   )
 }
@@ -131,7 +131,7 @@ slide_right_join <- function(x, y, i, by, ..., type = "locf") {
 
   dplyr::summarise(
     joined,
-    slide_join(x = lhs, y = rhs, i = i, type = type),
+    slide_join(x = lhs, y = rhs, i = i, type = type, preserve_if_empty_x = TRUE),
     .groups = "keep"
   )
 }
@@ -153,6 +153,27 @@ slide_inner_join <- function(x, y, i, by, ..., type = "locf") {
   dplyr::summarise(
     joined,
     slide_join(x = lhs, y = rhs, i = i, type = type),
+    .groups = "keep"
+  )
+}
+
+slide_full_join <- function(x, y, i, by, ..., type = "locf") {
+  check_dots_empty()
+
+  by_syms <- syms(by)
+
+  joined <- dplyr::full_join(
+    dplyr::nest_by(x, !!!by_syms, .key = "lhs"),
+    dplyr::nest_by(y, !!!by_syms, .key = "rhs"),
+    by = by
+  )
+
+  joined$lhs[vec_equal_na(joined$lhs)] <- list(attr(joined$lhs, "ptype"))
+  joined$rhs[vec_equal_na(joined$rhs)] <- list(attr(joined$rhs, "ptype"))
+
+  dplyr::summarise(
+    joined,
+    slide_join(x = lhs, y = rhs, i = i, type = type, preserve_if_empty_x = TRUE, preserve_if_empty_y = TRUE),
     .groups = "keep"
   )
 }
