@@ -115,6 +115,27 @@ slide_left_join <- function(x, y, i, by, ..., type = "locf") {
   )
 }
 
+slide_right_join <- function(x, y, i, by, ..., type = "locf") {
+  check_dots_empty()
+
+  by_syms <- syms(by)
+
+  joined <- dplyr::right_join(
+    dplyr::nest_by(x, !!!by_syms, .key = "lhs"),
+    dplyr::nest_by(y, !!!by_syms, .key = "rhs"),
+    by = by
+  )
+
+  joined$lhs[vec_equal_na(joined$lhs)] <- list(attr(joined$lhs, "ptype"))
+  joined$rhs[vec_equal_na(joined$rhs)] <- list(attr(joined$rhs, "ptype"))
+
+  dplyr::summarise(
+    joined,
+    slide_join(x = lhs, y = rhs, i = i, type = type),
+    .groups = "keep"
+  )
+}
+
 slide_inner_join <- function(x, y, i, by, ..., type = "locf") {
   check_dots_empty()
 
