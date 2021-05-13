@@ -71,6 +71,305 @@
 <a href="#slidejoin" class="anchor"></a>slidejoin</h1></div>
 <!-- badges: start -->
 
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/DavisVaughan/slidejoin">slidejoin</a></span><span class="op">)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">data.table</span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org">dplyr</a></span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://vctrs.r-lib.org/">vctrs</a></span><span class="op">)</span></code></pre></div>
+<div id="examples-1" class="section level2">
+<h2 class="hasAnchor">
+<a href="#examples-1" class="anchor"></a>Examples 1</h2>
+<p>Simple case of no <code>by</code> variables to join by. Just doing a rolling join.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">sales</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="op">(</span>
+  SaleId <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"S0"</span>, <span class="st">"S1"</span>, <span class="st">"S2"</span>, <span class="st">"S3"</span>, <span class="st">"S4"</span>, <span class="st">"S5"</span><span class="op">)</span>,
+  SaleDate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"2013-2-20"</span>, <span class="st">"2014-5-1"</span>, <span class="st">"2014-5-1"</span>, <span class="st">"2014-6-15"</span>, <span class="st">"2014-7-1"</span>, <span class="st">"2014-12-31"</span><span class="op">)</span><span class="op">)</span>
+<span class="op">)</span>
+
+<span class="va">commercials</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="op">(</span>
+  CommercialId <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"C1"</span>, <span class="st">"C2"</span>, <span class="st">"C3"</span>, <span class="st">"C4"</span>, <span class="st">"C5"</span><span class="op">)</span>,
+  CommercialDate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"2014-1-1"</span>, <span class="st">"2014-4-1"</span>, <span class="st">"2014-7-1"</span>, <span class="st">"2014-9-15"</span>, <span class="st">"2014-9-15"</span><span class="op">)</span><span class="op">)</span>
+<span class="op">)</span>
+
+<span class="va">sales</span><span class="op">[</span>, <span class="va">RollDate</span> <span class="op">:=</span> <span class="va">SaleDate</span><span class="op">]</span>
+<span class="va">commercials</span><span class="op">[</span>, <span class="va">RollDate</span> <span class="op">:=</span> <span class="va">CommercialDate</span><span class="op">]</span>
+
+<span class="fu">setkey</span><span class="op">(</span><span class="va">sales</span>, <span class="st">"RollDate"</span><span class="op">)</span>
+<span class="fu">setkey</span><span class="op">(</span><span class="va">commercials</span>, <span class="st">"RollDate"</span><span class="op">)</span>
+
+<span class="va">commercials_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html">as_tibble</a></span><span class="op">(</span><span class="va">commercials</span><span class="op">)</span>
+<span class="va">sales_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html">as_tibble</a></span><span class="op">(</span><span class="va">sales</span><span class="op">)</span>
+
+<span class="va">commercials_tbl</span>
+<span class="co">#&gt; # A tibble: 5 x 3</span>
+<span class="co">#&gt;   CommercialId CommercialDate RollDate  </span>
+<span class="co">#&gt;   &lt;chr&gt;        &lt;date&gt;         &lt;date&gt;    </span>
+<span class="co">#&gt; 1 C1           2014-01-01     2014-01-01</span>
+<span class="co">#&gt; 2 C2           2014-04-01     2014-04-01</span>
+<span class="co">#&gt; 3 C3           2014-07-01     2014-07-01</span>
+<span class="co">#&gt; 4 C4           2014-09-15     2014-09-15</span>
+<span class="co">#&gt; 5 C5           2014-09-15     2014-09-15</span>
+<span class="va">sales_tbl</span>
+<span class="co">#&gt; # A tibble: 6 x 3</span>
+<span class="co">#&gt;   SaleId SaleDate   RollDate  </span>
+<span class="co">#&gt;   &lt;chr&gt;  &lt;date&gt;     &lt;date&gt;    </span>
+<span class="co">#&gt; 1 S0     2013-02-20 2013-02-20</span>
+<span class="co">#&gt; 2 S1     2014-05-01 2014-05-01</span>
+<span class="co">#&gt; 3 S2     2014-05-01 2014-05-01</span>
+<span class="co">#&gt; 4 S3     2014-06-15 2014-06-15</span>
+<span class="co">#&gt; 5 S4     2014-07-01 2014-07-01</span>
+<span class="co">#&gt; 6 S5     2014-12-31 2014-12-31</span>
+
+<span class="co"># For a given sale, what was the last commercial that aired?</span>
+<span class="co"># (Sale 0 occurred before any commerical was aired)</span>
+<span class="fu">slide_join</span><span class="op">(</span><span class="va">sales_tbl</span>, <span class="va">commercials_tbl</span>, i <span class="op">=</span> <span class="st">"RollDate"</span><span class="op">)</span>
+<span class="co">#&gt; # A tibble: 6 x 5</span>
+<span class="co">#&gt;   SaleId SaleDate   RollDate   CommercialId CommercialDate</span>
+<span class="co">#&gt;   &lt;chr&gt;  &lt;date&gt;     &lt;date&gt;     &lt;chr&gt;        &lt;date&gt;        </span>
+<span class="co">#&gt; 1 S0     2013-02-20 2013-02-20 &lt;NA&gt;         NA            </span>
+<span class="co">#&gt; 2 S1     2014-05-01 2014-05-01 C2           2014-04-01    </span>
+<span class="co">#&gt; 3 S2     2014-05-01 2014-05-01 C2           2014-04-01    </span>
+<span class="co">#&gt; 4 S3     2014-06-15 2014-06-15 C2           2014-04-01    </span>
+<span class="co">#&gt; 5 S4     2014-07-01 2014-07-01 C3           2014-07-01    </span>
+<span class="co">#&gt; 6 S5     2014-12-31 2014-12-31 C5           2014-09-15</span>
+
+<span class="co"># commercials[sales, roll = Inf]</span>
+
+<span class="co"># For a given commercial, how long did it take to make the next sale?</span>
+<span class="fu">slide_join</span><span class="op">(</span><span class="va">commercials_tbl</span>, <span class="va">sales_tbl</span>, i <span class="op">=</span> <span class="st">"RollDate"</span>, type <span class="op">=</span> <span class="st">"nocb"</span><span class="op">)</span>
+<span class="co">#&gt; # A tibble: 5 x 5</span>
+<span class="co">#&gt;   CommercialId CommercialDate RollDate   SaleId SaleDate  </span>
+<span class="co">#&gt;   &lt;chr&gt;        &lt;date&gt;         &lt;date&gt;     &lt;chr&gt;  &lt;date&gt;    </span>
+<span class="co">#&gt; 1 C1           2014-01-01     2014-01-01 S1     2014-05-01</span>
+<span class="co">#&gt; 2 C2           2014-04-01     2014-04-01 S1     2014-05-01</span>
+<span class="co">#&gt; 3 C3           2014-07-01     2014-07-01 S4     2014-07-01</span>
+<span class="co">#&gt; 4 C4           2014-09-15     2014-09-15 S5     2014-12-31</span>
+<span class="co">#&gt; 5 C5           2014-09-15     2014-09-15 S5     2014-12-31</span>
+
+<span class="co"># sales[commercials, roll = -Inf]</span>
+
+
+<span class="va">sales_grouped</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://vctrs.r-lib.org/reference/vec_bind.html">vec_rbind</a></span><span class="op">(</span><span class="va">sales_tbl</span>, <span class="va">sales_tbl</span><span class="op">)</span>
+<span class="va">sales_grouped</span><span class="op">$</span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"coffee"</span>, <span class="st">"tea"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">6</span><span class="op">)</span>
+<span class="va">sales_grouped</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">sales_grouped</span>, <span class="va">g</span><span class="op">)</span>
+<span class="va">sales_grouped</span>
+<span class="co">#&gt; # A tibble: 12 x 4</span>
+<span class="co">#&gt; # Groups:   g [2]</span>
+<span class="co">#&gt;    SaleId SaleDate   RollDate   g     </span>
+<span class="co">#&gt;    &lt;chr&gt;  &lt;date&gt;     &lt;date&gt;     &lt;chr&gt; </span>
+<span class="co">#&gt;  1 S0     2013-02-20 2013-02-20 coffee</span>
+<span class="co">#&gt;  2 S1     2014-05-01 2014-05-01 coffee</span>
+<span class="co">#&gt;  3 S2     2014-05-01 2014-05-01 coffee</span>
+<span class="co">#&gt;  4 S3     2014-06-15 2014-06-15 coffee</span>
+<span class="co">#&gt;  5 S4     2014-07-01 2014-07-01 coffee</span>
+<span class="co">#&gt;  6 S5     2014-12-31 2014-12-31 coffee</span>
+<span class="co">#&gt;  7 S0     2013-02-20 2013-02-20 tea   </span>
+<span class="co">#&gt;  8 S1     2014-05-01 2014-05-01 tea   </span>
+<span class="co">#&gt;  9 S2     2014-05-01 2014-05-01 tea   </span>
+<span class="co">#&gt; 10 S3     2014-06-15 2014-06-15 tea   </span>
+<span class="co">#&gt; 11 S4     2014-07-01 2014-07-01 tea   </span>
+<span class="co">#&gt; 12 S5     2014-12-31 2014-12-31 tea</span>
+
+<span class="co"># For each group of sales, when was the last commercial that aired?</span>
+<span class="co"># (i.e. see if these commercials affected the sales of particular sale groups)</span>
+<span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarise</a></span><span class="op">(</span><span class="va">sales_grouped</span>, <span class="fu">slide_join</span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html">cur_data_all</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">commercials</span>, <span class="st">"RollDate"</span><span class="op">)</span><span class="op">)</span>
+<span class="co">#&gt; `summarise()` has grouped output by 'g'. You can override using the `.groups` argument.</span>
+<span class="co">#&gt; # A tibble: 12 x 6</span>
+<span class="co">#&gt; # Groups:   g [2]</span>
+<span class="co">#&gt;    g      SaleId SaleDate   RollDate   CommercialId CommercialDate</span>
+<span class="co">#&gt;    &lt;chr&gt;  &lt;chr&gt;  &lt;date&gt;     &lt;date&gt;     &lt;chr&gt;        &lt;date&gt;        </span>
+<span class="co">#&gt;  1 coffee S0     2013-02-20 2013-02-20 &lt;NA&gt;         NA            </span>
+<span class="co">#&gt;  2 coffee S1     2014-05-01 2014-05-01 C2           2014-04-01    </span>
+<span class="co">#&gt;  3 coffee S2     2014-05-01 2014-05-01 C2           2014-04-01    </span>
+<span class="co">#&gt;  4 coffee S3     2014-06-15 2014-06-15 C2           2014-04-01    </span>
+<span class="co">#&gt;  5 coffee S4     2014-07-01 2014-07-01 C3           2014-07-01    </span>
+<span class="co">#&gt;  6 coffee S5     2014-12-31 2014-12-31 C5           2014-09-15    </span>
+<span class="co">#&gt;  7 tea    S0     2013-02-20 2013-02-20 &lt;NA&gt;         NA            </span>
+<span class="co">#&gt;  8 tea    S1     2014-05-01 2014-05-01 C2           2014-04-01    </span>
+<span class="co">#&gt;  9 tea    S2     2014-05-01 2014-05-01 C2           2014-04-01    </span>
+<span class="co">#&gt; 10 tea    S3     2014-06-15 2014-06-15 C2           2014-04-01    </span>
+<span class="co">#&gt; 11 tea    S4     2014-07-01 2014-07-01 C3           2014-07-01    </span>
+<span class="co">#&gt; 12 tea    S5     2014-12-31 2014-12-31 C5           2014-09-15</span></code></pre></div>
+</div>
+<div id="examples-2" class="section level2">
+<h2 class="hasAnchor">
+<a href="#examples-2" class="anchor"></a>Examples 2</h2>
+<p>Now we have a join variable, <code>by = "name"</code>. For each name, we want to do a rolling join.</p>
+<p>Setup:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">isabel_website</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="op">(</span>name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="st">'Indecisive Isabel'</span>, <span class="fl">5</span><span class="op">)</span>,
+                             session_start_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html">as.POSIXct</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'2016-01-01 11:01'</span>, <span class="st">'2016-01-02 8:59'</span>, <span class="st">'2016-01-05 18:18'</span>, <span class="st">'2016-01-07 19:03'</span>, <span class="st">'2016-01-08 19:01'</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+<span class="va">isabel_paypal</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="op">(</span>name <span class="op">=</span> <span class="st">'Indecisive Isabel'</span>, purchase_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html">as.POSIXct</a></span><span class="op">(</span><span class="st">'2016-01-08 19:10'</span><span class="op">)</span><span class="op">)</span>
+
+<span class="va">sally_website</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="op">(</span>name <span class="op">=</span> <span class="st">'Spendy Sally'</span>, session_start_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html">as.POSIXct</a></span><span class="op">(</span><span class="st">'2016-01-03 10:00'</span><span class="op">)</span><span class="op">)</span>
+<span class="va">sally_paypal</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="op">(</span>name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="st">'Spendy Sally'</span>, <span class="fl">2</span><span class="op">)</span>, purchase_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html">as.POSIXct</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'2016-01-03 10:06'</span>, <span class="st">'2016-01-03 10:15'</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+
+<span class="va">francis_website</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="op">(</span>name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="st">'Frequent Francis'</span>, <span class="fl">6</span><span class="op">)</span>,
+                              session_start_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html">as.POSIXct</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'2016-01-02 13:09'</span>, <span class="st">'2016-01-03 19:22'</span>, <span class="st">'2016-01-08 8:44'</span>, <span class="st">'2016-01-08 20:22'</span>, <span class="st">'2016-01-10 17:36'</span>, <span class="st">'2016-01-15 16:56'</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+<span class="va">francis_paypal</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="op">(</span>name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="st">'Frequent Francis'</span>, <span class="fl">3</span><span class="op">)</span>, purchase_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html">as.POSIXct</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'2016-01-03 19:28'</span>, <span class="st">'2016-01-08 20:33'</span>, <span class="st">'2016-01-10 17:46'</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+
+<span class="va">erica_website</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="op">(</span>name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="st">'Error-prone Erica'</span>, <span class="fl">2</span><span class="op">)</span>,
+                            session_start_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html">as.POSIXct</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'2016-01-04 19:12'</span>, <span class="st">'2016-01-04 21:05'</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+<span class="va">erica_paypal</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="op">(</span>name <span class="op">=</span> <span class="st">'Error-prone Erica'</span>, purchase_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html">as.POSIXct</a></span><span class="op">(</span><span class="st">'2016-01-03 08:02'</span><span class="op">)</span><span class="op">)</span>
+
+<span class="va">vivian_website</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="op">(</span>name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="st">'Visitor Vivian'</span>, <span class="fl">2</span><span class="op">)</span>,
+                             session_start_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html">as.POSIXct</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'2016-01-01 9:10'</span>, <span class="st">'2016-01-09 2:15'</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+<span class="va">vivian_paypal</span> <span class="op">&lt;-</span> <span class="va">erica_paypal</span><span class="op">[</span><span class="fl">0</span><span class="op">]</span> <span class="co"># has 0 rows, but the same column names/classes</span>
+
+<span class="va">mom_website</span> <span class="op">&lt;-</span> <span class="va">vivian_website</span><span class="op">[</span><span class="fl">0</span><span class="op">]</span> <span class="co"># has 0 rows, but the same column names/classes</span>
+<span class="va">mom_paypal</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="op">(</span>name <span class="op">=</span> <span class="st">'Mom'</span>, purchase_time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html">as.POSIXct</a></span><span class="op">(</span><span class="st">'2015-12-02 17:58'</span><span class="op">)</span><span class="op">)</span>
+
+<span class="va">website</span> <span class="op">&lt;-</span> <span class="fu">rbindlist</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="va">isabel_website</span>, <span class="va">sally_website</span>, <span class="va">francis_website</span>, <span class="va">erica_website</span>, <span class="va">vivian_website</span>, <span class="va">mom_website</span><span class="op">)</span><span class="op">)</span>
+<span class="va">paypal</span> <span class="op">&lt;-</span> <span class="fu">rbindlist</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="va">isabel_paypal</span>, <span class="va">sally_paypal</span>, <span class="va">francis_paypal</span>, <span class="va">erica_paypal</span>, <span class="va">vivian_paypal</span>, <span class="va">mom_paypal</span><span class="op">)</span><span class="op">)</span>
+
+<span class="va">website</span><span class="op">[</span>, <span class="va">session_id</span><span class="op">:=</span><span class="va">.GRP</span>, by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">name</span>, <span class="va">session_start_time</span><span class="op">)</span><span class="op">]</span>
+<span class="va">paypal</span><span class="op">[</span>, <span class="va">payment_id</span><span class="op">:=</span><span class="va">.GRP</span>, by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">name</span>, <span class="va">purchase_time</span><span class="op">)</span><span class="op">]</span>
+
+<span class="va">website</span><span class="op">[</span>, <span class="va">join_time</span><span class="op">:=</span><span class="va">session_start_time</span><span class="op">]</span>
+<span class="va">paypal</span><span class="op">[</span>, <span class="va">join_time</span><span class="op">:=</span><span class="va">purchase_time</span><span class="op">]</span>
+
+<span class="fu">setkey</span><span class="op">(</span><span class="va">website</span>, <span class="va">name</span>, <span class="va">join_time</span><span class="op">)</span>
+<span class="fu">setkey</span><span class="op">(</span><span class="va">paypal</span>, <span class="va">name</span>, <span class="va">join_time</span><span class="op">)</span>
+
+<span class="va">website_tbl</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html">as_tibble</a></span><span class="op">(</span><span class="va">website</span><span class="op">)</span>
+<span class="va">paypal_tbl</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html">as_tibble</a></span><span class="op">(</span><span class="va">paypal</span><span class="op">)</span>
+
+<span class="va">website_tbl</span>
+<span class="co">#&gt; # A tibble: 16 x 4</span>
+<span class="co">#&gt;    name              session_start_time  session_id join_time          </span>
+<span class="co">#&gt;    &lt;chr&gt;             &lt;dttm&gt;                   &lt;int&gt; &lt;dttm&gt;             </span>
+<span class="co">#&gt;  1 Error-prone Erica 2016-01-04 19:12:00         13 2016-01-04 19:12:00</span>
+<span class="co">#&gt;  2 Error-prone Erica 2016-01-04 21:05:00         14 2016-01-04 21:05:00</span>
+<span class="co">#&gt;  3 Frequent Francis  2016-01-02 13:09:00          7 2016-01-02 13:09:00</span>
+<span class="co">#&gt;  4 Frequent Francis  2016-01-03 19:22:00          8 2016-01-03 19:22:00</span>
+<span class="co">#&gt;  5 Frequent Francis  2016-01-08 08:44:00          9 2016-01-08 08:44:00</span>
+<span class="co">#&gt;  6 Frequent Francis  2016-01-08 20:22:00         10 2016-01-08 20:22:00</span>
+<span class="co">#&gt;  7 Frequent Francis  2016-01-10 17:36:00         11 2016-01-10 17:36:00</span>
+<span class="co">#&gt;  8 Frequent Francis  2016-01-15 16:56:00         12 2016-01-15 16:56:00</span>
+<span class="co">#&gt;  9 Indecisive Isabel 2016-01-01 11:01:00          1 2016-01-01 11:01:00</span>
+<span class="co">#&gt; 10 Indecisive Isabel 2016-01-02 08:59:00          2 2016-01-02 08:59:00</span>
+<span class="co">#&gt; 11 Indecisive Isabel 2016-01-05 18:18:00          3 2016-01-05 18:18:00</span>
+<span class="co">#&gt; 12 Indecisive Isabel 2016-01-07 19:03:00          4 2016-01-07 19:03:00</span>
+<span class="co">#&gt; 13 Indecisive Isabel 2016-01-08 19:01:00          5 2016-01-08 19:01:00</span>
+<span class="co">#&gt; 14 Spendy Sally      2016-01-03 10:00:00          6 2016-01-03 10:00:00</span>
+<span class="co">#&gt; 15 Visitor Vivian    2016-01-01 09:10:00         15 2016-01-01 09:10:00</span>
+<span class="co">#&gt; 16 Visitor Vivian    2016-01-09 02:15:00         16 2016-01-09 02:15:00</span>
+<span class="va">paypal_tbl</span>
+<span class="co">#&gt; # A tibble: 8 x 4</span>
+<span class="co">#&gt;   name              purchase_time       payment_id join_time          </span>
+<span class="co">#&gt;   &lt;chr&gt;             &lt;dttm&gt;                   &lt;int&gt; &lt;dttm&gt;             </span>
+<span class="co">#&gt; 1 Error-prone Erica 2016-01-03 08:02:00          7 2016-01-03 08:02:00</span>
+<span class="co">#&gt; 2 Frequent Francis  2016-01-03 19:28:00          4 2016-01-03 19:28:00</span>
+<span class="co">#&gt; 3 Frequent Francis  2016-01-08 20:33:00          5 2016-01-08 20:33:00</span>
+<span class="co">#&gt; 4 Frequent Francis  2016-01-10 17:46:00          6 2016-01-10 17:46:00</span>
+<span class="co">#&gt; 5 Indecisive Isabel 2016-01-08 19:10:00          1 2016-01-08 19:10:00</span>
+<span class="co">#&gt; 6 Mom               2015-12-02 17:58:00          8 2015-12-02 17:58:00</span>
+<span class="co">#&gt; 7 Spendy Sally      2016-01-03 10:06:00          2 2016-01-03 10:06:00</span>
+<span class="co">#&gt; 8 Spendy Sally      2016-01-03 10:15:00          3 2016-01-03 10:15:00</span></code></pre></div>
+<p>Examples:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># For each purchase, find the last time they visited the website</span>
+<span class="co"># (Mom's card was used for the purchase, but she never visited)</span>
+<span class="fu">slide_left_join</span><span class="op">(</span><span class="va">paypal_tbl</span>, <span class="va">website_tbl</span>, <span class="st">"join_time"</span>, <span class="st">"name"</span><span class="op">)</span>
+<span class="co">#&gt; # A tibble: 8 x 6</span>
+<span class="co">#&gt; # Groups:   name [5]</span>
+<span class="co">#&gt;   name    purchase_time       payment_id join_time           session_start_time </span>
+<span class="co">#&gt;   &lt;chr&gt;   &lt;dttm&gt;                   &lt;int&gt; &lt;dttm&gt;              &lt;dttm&gt;             </span>
+<span class="co">#&gt; 1 Error-… 2016-01-03 08:02:00          7 2016-01-03 08:02:00 NA                 </span>
+<span class="co">#&gt; 2 Freque… 2016-01-03 19:28:00          4 2016-01-03 19:28:00 2016-01-03 19:22:00</span>
+<span class="co">#&gt; 3 Freque… 2016-01-08 20:33:00          5 2016-01-08 20:33:00 2016-01-08 20:22:00</span>
+<span class="co">#&gt; 4 Freque… 2016-01-10 17:46:00          6 2016-01-10 17:46:00 2016-01-10 17:36:00</span>
+<span class="co">#&gt; 5 Indeci… 2016-01-08 19:10:00          1 2016-01-08 19:10:00 2016-01-08 19:01:00</span>
+<span class="co">#&gt; 6 Mom     2015-12-02 17:58:00          8 2015-12-02 17:58:00 NA                 </span>
+<span class="co">#&gt; 7 Spendy… 2016-01-03 10:06:00          2 2016-01-03 10:06:00 2016-01-03 10:00:00</span>
+<span class="co">#&gt; 8 Spendy… 2016-01-03 10:15:00          3 2016-01-03 10:15:00 2016-01-03 10:00:00</span>
+<span class="co">#&gt; # … with 1 more variable: session_id &lt;int&gt;</span>
+
+<span class="co"># website[paypal, roll = TRUE]</span>
+
+<span class="co"># For each purchase that had a website session, find the last time they visited</span>
+<span class="co"># (So Mom gets excluded)</span>
+<span class="fu">slide_inner_join</span><span class="op">(</span><span class="va">paypal_tbl</span>, <span class="va">website_tbl</span>, <span class="st">"join_time"</span>, <span class="st">"name"</span><span class="op">)</span>
+<span class="co">#&gt; # A tibble: 7 x 6</span>
+<span class="co">#&gt; # Groups:   name [4]</span>
+<span class="co">#&gt;   name    purchase_time       payment_id join_time           session_start_time </span>
+<span class="co">#&gt;   &lt;chr&gt;   &lt;dttm&gt;                   &lt;int&gt; &lt;dttm&gt;              &lt;dttm&gt;             </span>
+<span class="co">#&gt; 1 Error-… 2016-01-03 08:02:00          7 2016-01-03 08:02:00 NA                 </span>
+<span class="co">#&gt; 2 Freque… 2016-01-03 19:28:00          4 2016-01-03 19:28:00 2016-01-03 19:22:00</span>
+<span class="co">#&gt; 3 Freque… 2016-01-08 20:33:00          5 2016-01-08 20:33:00 2016-01-08 20:22:00</span>
+<span class="co">#&gt; 4 Freque… 2016-01-10 17:46:00          6 2016-01-10 17:46:00 2016-01-10 17:36:00</span>
+<span class="co">#&gt; 5 Indeci… 2016-01-08 19:10:00          1 2016-01-08 19:10:00 2016-01-08 19:01:00</span>
+<span class="co">#&gt; 6 Spendy… 2016-01-03 10:06:00          2 2016-01-03 10:06:00 2016-01-03 10:00:00</span>
+<span class="co">#&gt; 7 Spendy… 2016-01-03 10:15:00          3 2016-01-03 10:15:00 2016-01-03 10:00:00</span>
+<span class="co">#&gt; # … with 1 more variable: session_id &lt;int&gt;</span>
+
+<span class="co"># Sort of - also drops purchases with no session time</span>
+<span class="co"># In mine, the inner join only applies to `by`, not `i`</span>
+<span class="co"># website[paypal, roll = TRUE, nomatch = NULL]</span>
+
+<span class="co"># For each of the purchases that have a website session,</span>
+<span class="co"># find the last time they visited the website. Also appends</span>
+<span class="co"># website sessions that had no purchases to the end.</span>
+<span class="fu">slide_right_join</span><span class="op">(</span><span class="va">paypal_tbl</span>, <span class="va">website_tbl</span>, <span class="st">"join_time"</span>, <span class="st">"name"</span><span class="op">)</span>
+<span class="co">#&gt; # A tibble: 9 x 6</span>
+<span class="co">#&gt; # Groups:   name [5]</span>
+<span class="co">#&gt;   name    purchase_time       payment_id join_time           session_start_time </span>
+<span class="co">#&gt;   &lt;chr&gt;   &lt;dttm&gt;                   &lt;int&gt; &lt;dttm&gt;              &lt;dttm&gt;             </span>
+<span class="co">#&gt; 1 Error-… 2016-01-03 08:02:00          7 2016-01-03 08:02:00 NA                 </span>
+<span class="co">#&gt; 2 Freque… 2016-01-03 19:28:00          4 2016-01-03 19:28:00 2016-01-03 19:22:00</span>
+<span class="co">#&gt; 3 Freque… 2016-01-08 20:33:00          5 2016-01-08 20:33:00 2016-01-08 20:22:00</span>
+<span class="co">#&gt; 4 Freque… 2016-01-10 17:46:00          6 2016-01-10 17:46:00 2016-01-10 17:36:00</span>
+<span class="co">#&gt; 5 Indeci… 2016-01-08 19:10:00          1 2016-01-08 19:10:00 2016-01-08 19:01:00</span>
+<span class="co">#&gt; 6 Spendy… 2016-01-03 10:06:00          2 2016-01-03 10:06:00 2016-01-03 10:00:00</span>
+<span class="co">#&gt; 7 Spendy… 2016-01-03 10:15:00          3 2016-01-03 10:15:00 2016-01-03 10:00:00</span>
+<span class="co">#&gt; 8 Visito… NA                          NA NA                  2016-01-01 09:10:00</span>
+<span class="co">#&gt; 9 Visito… NA                          NA NA                  2016-01-09 02:15:00</span>
+<span class="co">#&gt; # … with 1 more variable: session_id &lt;int&gt;</span>
+
+<span class="co"># Combination of left and right (So we get Mom - no session, and Vivian - no purchase)</span>
+<span class="fu">slide_full_join</span><span class="op">(</span><span class="va">paypal_tbl</span>, <span class="va">website_tbl</span>, <span class="st">"join_time"</span>, <span class="st">"name"</span><span class="op">)</span>
+<span class="co">#&gt; # A tibble: 10 x 6</span>
+<span class="co">#&gt; # Groups:   name [6]</span>
+<span class="co">#&gt;    name   purchase_time       payment_id join_time           session_start_time </span>
+<span class="co">#&gt;    &lt;chr&gt;  &lt;dttm&gt;                   &lt;int&gt; &lt;dttm&gt;              &lt;dttm&gt;             </span>
+<span class="co">#&gt;  1 Error… 2016-01-03 08:02:00          7 2016-01-03 08:02:00 NA                 </span>
+<span class="co">#&gt;  2 Frequ… 2016-01-03 19:28:00          4 2016-01-03 19:28:00 2016-01-03 19:22:00</span>
+<span class="co">#&gt;  3 Frequ… 2016-01-08 20:33:00          5 2016-01-08 20:33:00 2016-01-08 20:22:00</span>
+<span class="co">#&gt;  4 Frequ… 2016-01-10 17:46:00          6 2016-01-10 17:46:00 2016-01-10 17:36:00</span>
+<span class="co">#&gt;  5 Indec… 2016-01-08 19:10:00          1 2016-01-08 19:10:00 2016-01-08 19:01:00</span>
+<span class="co">#&gt;  6 Mom    2015-12-02 17:58:00          8 2015-12-02 17:58:00 NA                 </span>
+<span class="co">#&gt;  7 Spend… 2016-01-03 10:06:00          2 2016-01-03 10:06:00 2016-01-03 10:00:00</span>
+<span class="co">#&gt;  8 Spend… 2016-01-03 10:15:00          3 2016-01-03 10:15:00 2016-01-03 10:00:00</span>
+<span class="co">#&gt;  9 Visit… NA                          NA NA                  2016-01-01 09:10:00</span>
+<span class="co">#&gt; 10 Visit… NA                          NA NA                  2016-01-09 02:15:00</span>
+<span class="co">#&gt; # … with 1 more variable: session_id &lt;int&gt;</span>
+
+<span class="co"># For each website session, find the next purchase</span>
+<span class="co"># (Francis had two sessions leading up to the same purchase)</span>
+<span class="fu">slide_left_join</span><span class="op">(</span><span class="va">website_tbl</span>, <span class="va">paypal_tbl</span>, <span class="st">"join_time"</span>, <span class="st">"name"</span>, type <span class="op">=</span> <span class="st">"nocb"</span><span class="op">)</span>
+<span class="co">#&gt; # A tibble: 16 x 6</span>
+<span class="co">#&gt; # Groups:   name [5]</span>
+<span class="co">#&gt;    name   session_start_time  session_id join_time           purchase_time      </span>
+<span class="co">#&gt;    &lt;chr&gt;  &lt;dttm&gt;                   &lt;int&gt; &lt;dttm&gt;              &lt;dttm&gt;             </span>
+<span class="co">#&gt;  1 Error… 2016-01-04 19:12:00         13 2016-01-04 19:12:00 NA                 </span>
+<span class="co">#&gt;  2 Error… 2016-01-04 21:05:00         14 2016-01-04 21:05:00 NA                 </span>
+<span class="co">#&gt;  3 Frequ… 2016-01-02 13:09:00          7 2016-01-02 13:09:00 2016-01-03 19:28:00</span>
+<span class="co">#&gt;  4 Frequ… 2016-01-03 19:22:00          8 2016-01-03 19:22:00 2016-01-03 19:28:00</span>
+<span class="co">#&gt;  5 Frequ… 2016-01-08 08:44:00          9 2016-01-08 08:44:00 2016-01-08 20:33:00</span>
+<span class="co">#&gt;  6 Frequ… 2016-01-08 20:22:00         10 2016-01-08 20:22:00 2016-01-08 20:33:00</span>
+<span class="co">#&gt;  7 Frequ… 2016-01-10 17:36:00         11 2016-01-10 17:36:00 2016-01-10 17:46:00</span>
+<span class="co">#&gt;  8 Frequ… 2016-01-15 16:56:00         12 2016-01-15 16:56:00 NA                 </span>
+<span class="co">#&gt;  9 Indec… 2016-01-01 11:01:00          1 2016-01-01 11:01:00 2016-01-08 19:10:00</span>
+<span class="co">#&gt; 10 Indec… 2016-01-02 08:59:00          2 2016-01-02 08:59:00 2016-01-08 19:10:00</span>
+<span class="co">#&gt; 11 Indec… 2016-01-05 18:18:00          3 2016-01-05 18:18:00 2016-01-08 19:10:00</span>
+<span class="co">#&gt; 12 Indec… 2016-01-07 19:03:00          4 2016-01-07 19:03:00 2016-01-08 19:10:00</span>
+<span class="co">#&gt; 13 Indec… 2016-01-08 19:01:00          5 2016-01-08 19:01:00 2016-01-08 19:10:00</span>
+<span class="co">#&gt; 14 Spend… 2016-01-03 10:00:00          6 2016-01-03 10:00:00 2016-01-03 10:06:00</span>
+<span class="co">#&gt; 15 Visit… 2016-01-01 09:10:00         15 2016-01-01 09:10:00 NA                 </span>
+<span class="co">#&gt; 16 Visit… 2016-01-09 02:15:00         16 2016-01-09 02:15:00 NA                 </span>
+<span class="co">#&gt; # … with 1 more variable: payment_id &lt;int&gt;</span></code></pre></div>
+</div>
 </div>
   </div>
 
