@@ -22,3 +22,142 @@ knitr::opts_chunk$set(
 [![R-CMD-check](https://github.com/DavisVaughan/slidejoin/workflows/R-CMD-check/badge.svg)](https://github.com/DavisVaughan/slidejoin/actions)
 <!-- badges: end -->
 
+```{r}
+library(slidejoin)
+```
+
+```{r, warning=FALSE, message=FALSE}
+library(data.table)
+library(dplyr)
+library(vctrs)
+```
+
+
+## Examples 1
+
+Simple case of no `by` variables to join by. Just doing a rolling join.
+
+```{r}
+sales <- data.table(
+  SaleId = c("S0", "S1", "S2", "S3", "S4", "S5"),
+  SaleDate = as.Date(c("2013-2-20", "2014-5-1", "2014-5-1", "2014-6-15", "2014-7-1", "2014-12-31"))
+)
+
+commercials <- data.table(
+  CommercialId = c("C1", "C2", "C3", "C4", "C5"),
+  CommercialDate = as.Date(c("2014-1-1", "2014-4-1", "2014-7-1", "2014-9-15", "2014-9-15"))
+)
+
+sales[, RollDate := SaleDate]
+commercials[, RollDate := CommercialDate]
+
+setkey(sales, "RollDate")
+setkey(commercials, "RollDate")
+
+commercials_tbl <- as_tibble(commercials)
+sales_tbl <- as_tibble(sales)
+
+commercials_tbl
+sales_tbl
+
+# For a given sale, what was the last commercial that aired?
+# (Sale 0 occurred before any commerical was aired)
+slide_join(sales_tbl, commercials_tbl, i = "RollDate")
+
+# commercials[sales, roll = Inf]
+
+# For a given commercial, how long did it take to make the next sale?
+slide_join(commercials_tbl, sales_tbl, i = "RollDate", type = "nocb")
+
+# sales[commercials, roll = -Inf]
+
+
+sales_grouped <- vec_rbind(sales_tbl, sales_tbl)
+sales_grouped$g <- rep(c("coffee", "tea"), each = 6)
+sales_grouped <- group_by(sales_grouped, g)
+sales_grouped
+
+# For each group of sales, when was the last commercial that aired?
+# (i.e. see if these commercials affected the sales of particular sale groups)
+summarise(sales_grouped, slide_join(cur_data_all(), commercials, "RollDate"))
+```
+
+## Examples 2
+
+Now we have a join variable, `by = "name"`. For each name, we want to do a rolling join.
+
+Setup:
+
+```{r}
+isabel_website <- data.table(name = rep('Indecisive Isabel', 5),
+                             session_start_time = as.POSIXct(c('2016-01-01 11:01', '2016-01-02 8:59', '2016-01-05 18:18', '2016-01-07 19:03', '2016-01-08 19:01')))
+isabel_paypal <- data.table(name = 'Indecisive Isabel', purchase_time = as.POSIXct('2016-01-08 19:10'))
+
+sally_website <- data.table(name = 'Spendy Sally', session_start_time = as.POSIXct('2016-01-03 10:00'))
+sally_paypal <- data.table(name = rep('Spendy Sally', 2), purchase_time = as.POSIXct(c('2016-01-03 10:06', '2016-01-03 10:15')))
+
+francis_website <- data.table(name = rep('Frequent Francis', 6),
+                              session_start_time = as.POSIXct(c('2016-01-02 13:09', '2016-01-03 19:22', '2016-01-08 8:44', '2016-01-08 20:22', '2016-01-10 17:36', '2016-01-15 16:56')))
+francis_paypal <- data.table(name = rep('Frequent Francis', 3), purchase_time = as.POSIXct(c('2016-01-03 19:28', '2016-01-08 20:33', '2016-01-10 17:46')))
+
+erica_website <- data.table(name = rep('Error-prone Erica', 2),
+                            session_start_time = as.POSIXct(c('2016-01-04 19:12', '2016-01-04 21:05')))
+erica_paypal <- data.table(name = 'Error-prone Erica', purchase_time = as.POSIXct('2016-01-03 08:02'))
+
+vivian_website <- data.table(name = rep('Visitor Vivian', 2),
+                             session_start_time = as.POSIXct(c('2016-01-01 9:10', '2016-01-09 2:15')))
+vivian_paypal <- erica_paypal[0] # has 0 rows, but the same column names/classes
+
+mom_website <- vivian_website[0] # has 0 rows, but the same column names/classes
+mom_paypal <- data.table(name = 'Mom', purchase_time = as.POSIXct('2015-12-02 17:58'))
+
+website <- rbindlist(list(isabel_website, sally_website, francis_website, erica_website, vivian_website, mom_website))
+paypal <- rbindlist(list(isabel_paypal, sally_paypal, francis_paypal, erica_paypal, vivian_paypal, mom_paypal))
+
+website[, session_id:=.GRP, by = .(name, session_start_time)]
+paypal[, payment_id:=.GRP, by = .(name, purchase_time)]
+
+website[, join_time:=session_start_time]
+paypal[, join_time:=purchase_time]
+
+setkey(website, name, join_time)
+setkey(paypal, name, join_time)
+
+website_tbl <- tibble::as_tibble(website)
+paypal_tbl <- tibble::as_tibble(paypal)
+
+website_tbl
+paypal_tbl
+```
+
+Examples:
+
+```{r}
+# For each purchase, find the last time they visited the website
+# (Mom's card was used for the purchase, but she never visited)
+slide_left_join(paypal_tbl, website_tbl, "join_time", "name")
+
+# website[paypal, roll = TRUE]
+
+# For each purchase that had a website session, find the last time they visited
+# (So Mom gets excluded)
+slide_inner_join(paypal_tbl, website_tbl, "join_time", "name")
+
+# Sort of - also drops purchases with no session time
+# In mine, the inner join only applies to `by`, not `i`
+# website[paypal, roll = TRUE, nomatch = NULL]
+
+# For each of the purchases that have a website session,
+# find the last time they visited the website. Also appends
+# website sessions that had no purchases to the end.
+slide_right_join(paypal_tbl, website_tbl, "join_time", "name")
+
+# Combination of left and right (So we get Mom - no session, and Vivian - no purchase)
+slide_full_join(paypal_tbl, website_tbl, "join_time", "name")
+
+# For each website session, find the next purchase
+# (Francis had two sessions leading up to the same purchase)
+slide_left_join(website_tbl, paypal_tbl, "join_time", "name", type = "nocb")
+```
+
+

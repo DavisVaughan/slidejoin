@@ -1,9 +1,23 @@
-# TODO: `by` for groups
-# TODO: `type` should be able to take a "limit" integer
 # TODO: Finer control over rolling the ends? Like `rollends`
-# TODO: Allow `i` to be different between `x` and `y`? c("foo" = "bar")?
 
-slide_join <- function(x, y, i, ..., type = "locf", preserve_if_empty_x = FALSE, preserve_if_empty_y = FALSE) {
+# A better API is probably:
+#
+# slide_join(
+#  x, y, i, ...,
+#  direction = c("forward", "backward", "nearest"),
+#  limit = Inf, # Positive integer or Inf, limiting how fall it looks forward/backward
+#  preserve_if_empty_x = FALSE,
+#  preserve_if_empty_y = FALSE
+# )
+
+#' @export
+slide_join <- function(x,
+                       y,
+                       i,
+                       ...,
+                       type = "locf",
+                       preserve_if_empty_x = FALSE,
+                       preserve_if_empty_y = FALSE) {
   check_dots_empty()
 
   x_i <- x[[i]]
@@ -94,6 +108,7 @@ slide_join <- function(x, y, i, ..., type = "locf", preserve_if_empty_x = FALSE,
   )
 }
 
+#' @export
 slide_left_join <- function(x, y, i, by, ..., type = "locf") {
   check_dots_empty()
 
@@ -115,6 +130,7 @@ slide_left_join <- function(x, y, i, by, ..., type = "locf") {
   )
 }
 
+#' @export
 slide_right_join <- function(x, y, i, by, ..., type = "locf") {
   check_dots_empty()
 
@@ -136,6 +152,7 @@ slide_right_join <- function(x, y, i, by, ..., type = "locf") {
   )
 }
 
+#' @export
 slide_inner_join <- function(x, y, i, by, ..., type = "locf") {
   check_dots_empty()
 
@@ -157,6 +174,7 @@ slide_inner_join <- function(x, y, i, by, ..., type = "locf") {
   )
 }
 
+#' @export
 slide_full_join <- function(x, y, i, by, ..., type = "locf") {
   check_dots_empty()
 
